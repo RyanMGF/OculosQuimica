@@ -11,6 +11,31 @@ const expandButton = document.querySelector('.expand-btn');
 const startScreen = document.getElementById('start-screen');
 const startButton = document.getElementById('start-button');
 
+const restoreFullscreenButton = document.createElement('button');
+restoreFullscreenButton.id = 'restore-fullscreen';
+restoreFullscreenButton.type = 'button';
+restoreFullscreenButton.textContent = 'Restaurar Tela Cheia';
+restoreFullscreenButton.hidden = true;
+document.body.appendChild(restoreFullscreenButton);
+
+document.addEventListener('fullscreenchange', () => {
+    restoreFullscreenButton.hidden = Boolean(document.fullscreenElement);
+});
+
+restoreFullscreenButton.addEventListener('click', () => {
+    const fullscreenRequest = document.documentElement.requestFullscreen?.();
+    if (fullscreenRequest) {
+        fullscreenRequest.catch(() => {});
+    }
+});
+
+document.addEventListener('touchmove', function(e) {
+    if (e.target.closest?.('#ui-facts')) {
+        return;
+    }
+    e.preventDefault();
+}, { passive: false });
+
 let currentMolecule = ""; // Guarda a molécula sendo exibida no momento
 let isZooming = false;
 let lineOffset = 0;
@@ -57,7 +82,7 @@ startButton.addEventListener('click', () => {
 
 // 1. Configuração de Cores
 const TARGETS = {
-    AZUL: { hMin: 190, hMax: 240, sMin: 55, vMin: 50, colorHex: "#00bfff", name: "O/N" },     
+    AZUL: { hMin: 160, hMax: 260, sMin: 35, vMin: 35, colorHex: "#00bfff", name: "O/N" },
     VERDE: { hMin: 80, hMax: 140, sMin: 30, vMin: 30, colorHex: "#00cc00", name: "Cl" },    
     LARANJA: { hMin: 10, hMax: 40, sMin: 30, vMin: 30, colorHex: "#ff8c00", name: "H/F" }
 };
