@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#07131f">
+    <title>Laboratório VR - Visão Química</title>
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+</head>
+<body>
+    <a-scene background="color: #07131f" renderer="colorManagement: true">
+        <a-assets>
+            <a-mixin id="atom" geometry="primitive: sphere; radius: 0.34" material="roughness: 0.28; metalness: 0.12"></a-mixin>
+            <a-mixin id="bond" geometry="primitive: cylinder; radius: 0.09" material="color: #a8c8d8; roughness: 0.35"></a-mixin>
+        </a-assets>
+
+        <a-sky color="#07131f"></a-sky>
+
+        <a-entity position="0 0 0">
+            <a-sphere position="-4 2 -7" radius="0.025" color="#d9f3ff"></a-sphere>
+            <a-sphere position="3 3 -8" radius="0.035" color="#b9e7ff"></a-sphere>
+            <a-sphere position="5 -1 -9" radius="0.02" color="#ffffff"></a-sphere>
+            <a-sphere position="-6 -2 -8" radius="0.03" color="#b9e7ff"></a-sphere>
+            <a-sphere position="1 4 -10" radius="0.025" color="#ffffff"></a-sphere>
+            <a-sphere position="-2 -3 -7" radius="0.02" color="#d9f3ff"></a-sphere>
+            <a-sphere position="7 2 -11" radius="0.03" color="#ffffff"></a-sphere>
+            <a-sphere position="-7 1 -10" radius="0.025" color="#b9e7ff"></a-sphere>
+            <a-sphere position="2 -2 -11" radius="0.02" color="#d9f3ff"></a-sphere>
+            <a-sphere position="-1 1 -12" radius="0.035" color="#ffffff"></a-sphere>
+        </a-entity>
+
+        <a-entity position="0 1.6 -4" animation="property: rotation; to: 0 360 0; loop: true; dur: 24000; easing: linear">
+            <a-entity mixin="atom" position="0 0 0" material="color: #32b8d4; emissive: #075d70; emissiveIntensity: 0.35"></a-entity>
+            <a-entity mixin="atom" position="-0.95 0.35 0" scale="0.78 0.78 0.78" material="color: #f06d68; emissive: #70241f; emissiveIntensity: 0.25"></a-entity>
+            <a-entity mixin="atom" position="0.75 0.65 0.25" scale="0.72 0.72 0.72" material="color: #f4c95d; emissive: #70520c; emissiveIntensity: 0.25"></a-entity>
+            <a-entity mixin="atom" position="0.45 -0.8 -0.2" scale="0.65 0.65 0.65" material="color: #91d17c; emissive: #315d27; emissiveIntensity: 0.25"></a-entity>
+
+            <a-cylinder mixin="bond" position="-0.48 0.18 0" rotation="0 0 110" height="0.95"></a-cylinder>
+            <a-cylinder mixin="bond" position="0.39 0.33 0.12" rotation="0 0 48" height="0.84"></a-cylinder>
+            <a-cylinder mixin="bond" position="0.23 -0.4 -0.1" rotation="0 0 -25" height="0.78"></a-cylinder>
+        </a-entity>
+
+        <a-entity position="-2.05 2.15 -3.7" rotation="0 24 0">
+            <a-plane width="1.65" height="0.95" color="#102b39" opacity="0.9" material="shader: flat; side: double"></a-plane>
+            <a-text value="A matéria é feita de átomos,\npequenos blocos que se ligam\npara formar tudo ao nosso redor." align="center" color="#e8f7fc" width="2.25" position="0 0 0.02" wrap-count="25"></a-text>
+        </a-entity>
+
+        <a-entity position="2.05 1.8 -3.8" rotation="0 -24 0">
+            <a-plane width="1.65" height="0.95" color="#102b39" opacity="0.9" material="shader: flat; side: double"></a-plane>
+            <a-text value="Na água, dois átomos de\nhidrogênio se ligam a um\nátomo de oxigênio: H₂O." align="center" color="#e8f7fc" width="2.25" position="0 0 0.02" wrap-count="25"></a-text>
+        </a-entity>
+
+        <a-entity position="0 0.35 -5.2">
+            <a-plane width="1.9" height="0.8" color="#102b39" opacity="0.9" material="shader: flat; side: double"></a-plane>
+            <a-text value="As ligações químicas ajudam\na explicar como materiais\ndiferentes são formados." align="center" color="#e8f7fc" width="2.5" position="0 0 0.02" wrap-count="29"></a-text>
+        </a-entity>
+
+        <a-link href="index.html" title="Voltar para a câmera" position="0 -1.15 -2.5" scale="0.65 0.65 0.65" color="#f4c95d"></a-link>
+
+        <a-entity position="0 1.6 0">
+            <a-camera wasd-controls-enabled="false" look-controls="reverseMouseDrag: true">
+                <a-cursor color="#ffffff" fuse="false" raycaster="objects: a-link" animation__click="property: scale; startEvents: click; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150"></a-cursor>
+            </a-camera>
+        </a-entity>
+    </a-scene>
+    <script src="js/vr-gamepad.js"></script>
+</body>
+</html>

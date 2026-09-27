@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Visão Química - Web</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="start-screen">
+        <button id="start-button" type="button">Iniciar Laboratório</button>
+    </div>
+
+    <!-- O vídeo captura a câmera (escondido), o canvas mostra a imagem processada -->
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+    <div id="zoom-overlay" aria-hidden="true"></div>
+
+    <div id="mission-box">Missão 1: Crie a molécula da Água (O + H)!</div>
+    
+    <div id="status">Iniciando câmara...</div>
+
+    <!-- Painel de Informações que aparece quando a molécula se forma -->
+    <div id="ui-container">
+        <div class="molecule-title" id="ui-title">Buscando moléculas...</div>
+        <div id="ui-tags" class="tags-container"></div>
+        <ul id="ui-facts">
+            <li>Aproxime duas peças para formar uma ligação.</li>
+        </ul>
+        <button class="expand-btn">
+            Expandir Detalhes (VR)
+        </button>
+    </div>
+
+    <!-- Importando a nossa lógica -->
+    <script src="js/logic.js"></script>
+</body>
+</html>
