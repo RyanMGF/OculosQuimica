@@ -76,6 +76,13 @@ function startLab(event) {
     else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
     else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
 
+    // Trava a tela na horizontal (Landscape)
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(err => {
+            console.warn('O bloqueio de rotação falhou ou não é suportado:', err);
+        });
+    }
+
     let unlockMsg = new SpeechSynthesisUtterance('Áudio ativado');
     unlockMsg.volume = 0;
     window.speechSynthesis.speak(unlockMsg);
@@ -87,10 +94,6 @@ function startLab(event) {
         return;
     }
     labStarted = true;
-
-    if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('portrait').catch(e => console.log('Bloqueio de rotação não suportado', e));
-    }
 
     startScreen.style.display = 'none';
     canvas.style.display = 'block';
