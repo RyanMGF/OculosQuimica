@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Visão Química - Web</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -11,6 +13,7 @@
     <div id="start-screen">
         <button id="start-button" type="button">Iniciar Laboratório</button>
     </div>
+    <button id="voice-toggle" type="button" aria-label="Desativar Voz" aria-pressed="true">🔊 Desativar Voz</button>
 
     <!-- O vídeo captura a câmera (escondido), o canvas mostra a imagem processada -->
     <video id="video" autoplay playsinline></video>
@@ -25,13 +28,14 @@
 
     <!-- Painel de Informações que aparece quando a molécula se forma -->
     <div id="ui-container">
+        <div class="bauhaus-deco"></div>
         <div class="molecule-title" id="ui-title">Buscando moléculas...</div>
         <div id="ui-tags" class="tags-container"></div>
         <ul id="ui-facts">
             <li>Aproxime duas peças para formar uma ligação.</li>
         </ul>
         <button class="expand-btn">
-            Expandir Detalhes (VR)
+            Explorar ambiente virtual
         </button>
     </div>
 

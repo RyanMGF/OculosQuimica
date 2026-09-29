@@ -8,6 +8,7 @@ const uiFacts = document.getElementById('ui-facts');
 const statusTxt = document.getElementById('status');
 const missionBox = document.getElementById('mission-box');
 const expandButton = document.querySelector('.expand-btn');
+const voiceToggleButton = document.getElementById('voice-toggle');
 const startScreen = document.getElementById('start-screen');
 const startButton = document.getElementById('start-button');
 
@@ -37,14 +38,16 @@ document.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 let currentMolecule = ""; // Guarda a molécula sendo exibida no momento
-let isZooming = false;
+let vozAtiva = true;
+let labStarted = false;
 let lineOffset = 0;
 let ultimoProcessamento = 0;
 const CONNECTION_DELAY_MS = 1500;
+const SPEECH_DEBOUNCE_MS = 500;
+let speechTimeout = null;
+let pendingSpeechMolecule = '';
 const GRID_CELL_SIZE = 24;
-const MIN_CLUSTER_PIXELS = 50;
 const closePairSince = new Map();
-const conexoesAtivas = new Map();
 let particulas = [];
 let smoothPoints = {};
 let missaoAtual = 0;
@@ -52,25 +55,38 @@ let missaoConcluida = false;
 let audioContext = null;
 
 expandButton.addEventListener('click', () => {
-    if (isZooming) {
-        return;
-    }
-
-    isZooming = true;
-    const zoomOverlay = document.getElementById('zoom-overlay');
-    zoomOverlay.style.opacity = '1';
-    zoomOverlay.style.transform = 'scale(15)';
-
-    setTimeout(() => {
-        window.location.href = 'vr.html?molecula=' + currentMolecule;
-    }, 1500);
+    window.alert('Em desenvolvimento! Em breve você poderá entrar num laboratório 100% virtual em 360 graus para explorar o interior destas moléculas.');
 });
 
-startButton.addEventListener('click', () => {
-    const fullscreenRequest = document.documentElement.requestFullscreen?.();
-    if (fullscreenRequest) {
-        fullscreenRequest.catch(() => {});
+voiceToggleButton.addEventListener('click', () => {
+    vozAtiva = !vozAtiva;
+    voiceToggleButton.textContent = vozAtiva ? '🔊 Desativar Voz' : '🔇 Ativar Voz';
+    voiceToggleButton.setAttribute('aria-label', vozAtiva ? 'Desativar Voz' : 'Ativar Voz');
+    voiceToggleButton.setAttribute('aria-pressed', String(vozAtiva));
+
+    if (!vozAtiva) {
+        cancelarFalaPendente();
+        window.speechSynthesis?.cancel();
     }
+});
+
+function startLab(event) {
+    let unlockMsg = new SpeechSynthesisUtterance('Áudio ativado');
+    unlockMsg.volume = 0;
+    window.speechSynthesis.speak(unlockMsg);
+
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+    }
+
+    if (event.type === 'touchend') {
+        event.preventDefault();
+    }
+    if (labStarted) {
+        return;
+    }
+    labStarted = true;
+
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('portrait').catch(e => console.log('Bloqueio de rotação não suportado', e));
     }
@@ -78,13 +94,20 @@ startButton.addEventListener('click', () => {
     startScreen.style.display = 'none';
     canvas.style.display = 'block';
     initCamera();
+}
+
+startButton.addEventListener('click', (event) => {
+    if (!labStarted) {
+        startLab(event);
+    }
 });
+startButton.addEventListener('touchend', startLab, { passive: false });
 
 // 1. Configuração de Cores
 const TARGETS = {
-    AZUL: { hMin: 160, hMax: 260, sMin: 35, vMin: 35, colorHex: "#00bfff", name: "O/N" },
-    VERDE: { hMin: 80, hMax: 140, sMin: 30, vMin: 30, colorHex: "#00cc00", name: "Cl" },    
-    LARANJA: { hMin: 10, hMax: 40, sMin: 30, vMin: 30, colorHex: "#ff8c00", name: "H/F" }
+    AZUL: { hMin: 160, hMax: 260, sMin: 40, vMin: 35, colorHex: "#00bfff", name: "O/N" },
+    VERDE: { hMin: 80, hMax: 140, sMin: 35, vMin: 30, colorHex: "#00cc00", name: "Cl" },
+    LARANJA: { hMin: 5, hMax: 45, sMin: 45, vMin: 35, colorHex: "#ff8c00", name: "H/F" }
 };
 
 const ATOMOS = {
@@ -199,12 +222,44 @@ function playSuccessSound() {
 }
 
 function falar(texto) {
+    if (!window.speechSynthesis) {
+        return;
+    }
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'pt-BR';
-    utterance.pitch = 1.2;
-    utterance.rate = 0.9;
-    window.speechSynthesis.speak(utterance);
+    if (!vozAtiva) {
+        return;
+    }
+    const msg = new SpeechSynthesisUtterance(texto);
+    msg.lang = 'pt-BR';
+    msg.volume = 1;
+    msg.pitch = 1.2;
+    msg.rate = 0.9;
+    window.speechSynthesis.speak(msg);
+}
+
+function cancelarFalaPendente() {
+    if (speechTimeout !== null) {
+        clearTimeout(speechTimeout);
+        speechTimeout = null;
+    }
+    pendingSpeechMolecule = '';
+}
+
+function agendarFalaMolecula(moleculeKey, info) {
+    cancelarFalaPendente();
+    if (!vozAtiva) {
+        return;
+    }
+
+    pendingSpeechMolecule = moleculeKey;
+    const texto = `Molécula formada: ${info.nome}. ${info.fatos.join('. ')}`;
+    speechTimeout = setTimeout(() => {
+        speechTimeout = null;
+        if (vozAtiva && currentMolecule === moleculeKey && pendingSpeechMolecule === moleculeKey) {
+            pendingSpeechMolecule = '';
+            falar(texto);
+        }
+    }, SPEECH_DEBOUNCE_MS);
 }
 
 function rgbToHsv(r, g, b) {
@@ -224,7 +279,7 @@ function rgbToHsv(r, g, b) {
     return [h * 360, s * 100, v * 100];
 }
 
-function findSpatialClusters(cells, gridColumns) {
+function findSpatialClusters(cells, gridColumns, minPixels) {
     const visited = new Set();
     const clusters = [];
 
@@ -261,7 +316,7 @@ function findSpatialClusters(cells, gridColumns) {
             }
         }
 
-        if (cluster.count > MIN_CLUSTER_PIXELS) {
+        if (cluster.count > minPixels) {
             cluster.x /= cluster.count;
             cluster.y /= cluster.count;
             clusters.push(cluster);
@@ -324,7 +379,7 @@ function criarParticulas(x, y) {
             y,
             vx: Math.cos(angulo) * velocidade,
             vy: Math.sin(angulo) * velocidade,
-            color: Math.random() < 0.5 ? '#39ff14' : '#00ffff',
+            color: Math.random() < 0.5 ? '#4db8ff' : '#ff8c00',
             vida: 1
         });
     }
@@ -340,6 +395,17 @@ function resizeCanvasToViewport() {
 }
 
 window.addEventListener('resize', resizeCanvasToViewport);
+
+function positionUiAt(x, y) {
+    const canvasRect = canvas.getBoundingClientRect();
+    const screenX = canvasRect.left + (x / canvas.width) * canvasRect.width;
+    const screenY = canvasRect.top + (y / canvas.height) * canvasRect.height;
+    const leftPos = screenX + 40;
+    const maxTop = Math.max(0, window.innerHeight - ui.offsetHeight);
+
+    ui.style.left = `${Math.max(0, Math.min(leftPos, window.innerWidth - ui.offsetWidth - 10))}px`;
+    ui.style.top = `${Math.max(0, Math.min(maxTop, screenY - 60))}px`;
+}
 
 async function initCamera() {
     try {
@@ -397,11 +463,12 @@ function processFrame() {
     };
 
     // Varredura de cores
-    for (let i = 0; i < pixels.length; i += 16) {
+    for (let i = 0; i < pixels.length; i += 64) {
         let r = pixels[i], g = pixels[i + 1], b = pixels[i + 2];
         let [h, s, v] = rgbToHsv(r, g, b);
-        let pxX = (i / 4) % canvas.width;
-        let pxY = Math.floor((i / 4) / canvas.width);
+        const pixelIndex = i / 4;
+        let pxX = pixelIndex % canvas.width;
+        let pxY = Math.floor(pixelIndex / canvas.width);
 
         let colorKey = null;
         if (h >= TARGETS.LARANJA.hMin && h <= TARGETS.LARANJA.hMax && s > TARGETS.LARANJA.sMin && v > TARGETS.LARANJA.vMin) {
@@ -434,7 +501,8 @@ function processFrame() {
     let activePoints = {};
 
     for (const [colorKey, cells] of Object.entries(detections)) {
-        let clusters = findSpatialClusters(cells, gridColumns);
+        let minPixels = colorKey === 'AZUL' ? 25 : 5;
+        let clusters = findSpatialClusters(cells, gridColumns, minPixels);
         if (clusters.length > 0) {
             activePoints[colorKey] = smoothClusterPoints(colorKey, clusters, 0.25);
             for (const point of activePoints[colorKey]) {
@@ -448,6 +516,7 @@ function processFrame() {
     // Calcula a distância entre TODOS os pontos encontrados na tela
     let keys = Object.keys(activePoints);
     let pairConnected = null;
+    let pairMidpoint = null;
     let closePairs = new Set();
     let currentTime = performance.now();
 
@@ -462,12 +531,10 @@ function processFrame() {
                     let p2 = activePoints[color2][pointIndex2];
                     let distance = Math.hypot(p1.x - p2.x, p1.y - p2.y);
                     let pairStateKey = `${color1}:${pointIndex1}|${color2}:${pointIndex2}`;
-                    let wasConnected = conexoesAtivas.get(pairStateKey) === true;
-                    let isConnected = wasConnected ? distance <= 240 : distance < 160;
+                    let isConnected = distance < 400;
                     let isValidated = false;
 
                     if (isConnected) {
-                        conexoesAtivas.set(pairStateKey, true);
                         closePairs.add(pairStateKey);
                         if (!closePairSince.has(pairStateKey)) {
                             closePairSince.set(pairStateKey, currentTime);
@@ -475,8 +542,6 @@ function processFrame() {
                             criarParticulas((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
                         }
                         isValidated = currentTime - closePairSince.get(pairStateKey) >= CONNECTION_DELAY_MS;
-                    } else {
-                        conexoesAtivas.delete(pairStateKey);
                     }
 
                     ctx.save();
@@ -490,7 +555,7 @@ function processFrame() {
                     ctx.beginPath();
                     ctx.moveTo(p1.x, p1.y);
                     ctx.lineTo(p2.x, p2.y);
-                    ctx.strokeStyle = isValidated ? "#00ff00" : "rgba(255, 255, 255, 0.5)";
+                    ctx.strokeStyle = isValidated ? "#4db8ff" : "rgba(255, 255, 255, 0.5)";
                     ctx.lineWidth = isValidated ? 4 : 2;
                     ctx.stroke();
                     ctx.restore();
@@ -500,11 +565,12 @@ function processFrame() {
 
                         let midX = (p1.x + p2.x) / 2;
                         let midY = (p1.y + p2.y) / 2;
+                        pairMidpoint = { x: midX, y: midY };
                         let info = COMBINACOES[pairKey] ? COMBINACOES[pairKey].nome : "Ligação!";
 
                         ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
                         ctx.fillRect(midX - 50, midY - 20, 100, 30);
-                        ctx.fillStyle = "#00ff00";
+                        ctx.fillStyle = "#4db8ff";
                         ctx.font = "bold 14px Arial";
                         ctx.textAlign = "center";
                         ctx.fillText(info, midX, midY);
@@ -519,16 +585,10 @@ function processFrame() {
             closePairSince.delete(pairKey);
         }
     }
-    for (const pairStateKey of conexoesAtivas.keys()) {
-        if (!closePairs.has(pairStateKey)) {
-            conexoesAtivas.delete(pairStateKey);
-        }
-    }
-
     const missao = missoes[missaoAtual];
     if (missao && pairConnected === missao.alvo && !missaoConcluida) {
         missaoConcluida = true;
-        missionBox.style.color = '#39ff14';
+        missionBox.style.color = '#4db8ff';
         playSuccessSound();
 
         setTimeout(() => {
@@ -545,13 +605,17 @@ function processFrame() {
     }
 
     // Atualiza a Interface UI inferior com base na conexão
+    if (!pairConnected) {
+        cancelarFalaPendente();
+    }
+
     if (pairConnected) {
+        // Prioridade maxima: uma ligação validada.
+        const isNewMolecule = currentMolecule !== pairConnected;
         currentMolecule = pairConnected;
         let info = COMBINACOES[pairConnected] || COMBINACOES["DEFAULT"];
         let tagsHtml = info.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
         let factsHtml = info.fatos.map(fato => `<li>${fato}</li>`).join('');
-        let infoChanged = uiTitle.innerText !== info.nome || uiTags.innerHTML !== tagsHtml || uiFacts.innerHTML !== factsHtml;
-
         if (uiTitle.innerText !== info.nome) {
             uiTitle.innerText = info.nome;
         }
@@ -561,46 +625,52 @@ function processFrame() {
         if (uiFacts.innerHTML !== factsHtml) {
             uiFacts.innerHTML = factsHtml;
         }
-        if (infoChanged) {
-            falar(`${info.nome}. ${info.fatos[0]}`);
-        }
-        if (uiTitle.style.color) {
-            uiTitle.style.color = '';
+        uiTitle.style.color = '#4db8ff';
+        if (isNewMolecule) {
+            agendarFalaMolecula(pairConnected, info);
         }
         if (ui.style.display !== 'block') {
             ui.style.display = 'block';
         }
+        if (pairMidpoint) {
+            positionUiAt(pairMidpoint.x, pairMidpoint.y);
+        }
     } else if (Object.keys(activePoints).length > 0) {
+        // Sem ligação: exibe o átomo predominante.
         let colorCounts = Object.fromEntries(Object.entries(activePoints).map(([color, points]) => (
             [color, points.reduce((total, point) => total + point.count, 0)]
         )));
         let dominantColor = Object.keys(colorCounts).reduce((dominant, color) => (
             colorCounts[color] > colorCounts[dominant] ? color : dominant
         ));
+        const isNewAtom = currentMolecule !== dominantColor;
+        currentMolecule = dominantColor;
         let info = ATOMOS[dominantColor];
         let factsHtml = info.fatos.map(fato => `<li>${fato}</li>`).join('');
-        currentMolecule = '';
-        let infoChanged = uiTitle.innerText !== info.nome || uiFacts.innerHTML !== factsHtml;
-
         if (uiTitle.innerText !== info.nome) {
             uiTitle.innerText = info.nome;
         }
         if (uiFacts.innerHTML !== factsHtml) {
             uiFacts.innerHTML = factsHtml;
         }
-        if (uiTags.innerHTML) {
-            uiTags.innerHTML = '';
-        }
-        if (infoChanged) {
+        uiTitle.style.color = TARGETS[dominantColor].colorHex;
+        if (isNewAtom) {
             falar(`${info.nome}. ${info.fatos[0]}`);
         }
-        if (uiTitle.style.color !== TARGETS[dominantColor].colorHex) {
-            uiTitle.style.color = TARGETS[dominantColor].colorHex;
+        if (uiTags.innerHTML) {
+            uiTags.innerHTML = '';
         }
         if (ui.style.display !== 'block') {
             ui.style.display = 'block';
         }
+        const largestSpot = activePoints[dominantColor].reduce((largest, point) => (
+            point.count > largest.count ? point : largest
+        ));
+        const cx = largestSpot.x;
+        const cy = largestSpot.y;
+        positionUiAt(cx, cy);
     } else {
+        // Sem detecções: limpa o estado e oculta o painel.
         currentMolecule = "";
         if (ui.style.display !== 'none') {
             ui.style.display = 'none';
