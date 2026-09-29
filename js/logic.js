@@ -71,13 +71,14 @@ voiceToggleButton.addEventListener('click', () => {
 });
 
 function startLab(event) {
+    let elem = document.documentElement;
+    if (elem.requestFullscreen) { elem.requestFullscreen().catch(e => console.warn(e)); }
+    else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+    else if (elem.msRequestFullscreen) { elem.msRequestFullscreen(); }
+
     let unlockMsg = new SpeechSynthesisUtterance('Áudio ativado');
     unlockMsg.volume = 0;
     window.speechSynthesis.speak(unlockMsg);
-
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(err => console.log(err));
-    }
 
     if (event.type === 'touchend') {
         event.preventDefault();
@@ -400,7 +401,7 @@ function positionUiAt(x, y) {
     const canvasRect = canvas.getBoundingClientRect();
     const screenX = canvasRect.left + (x / canvas.width) * canvasRect.width;
     const screenY = canvasRect.top + (y / canvas.height) * canvasRect.height;
-    const leftPos = screenX + 40;
+    const leftPos = screenX + 65;
     const maxTop = Math.max(0, window.innerHeight - ui.offsetHeight);
 
     ui.style.left = `${Math.max(0, Math.min(leftPos, window.innerWidth - ui.offsetWidth - 10))}px`;
